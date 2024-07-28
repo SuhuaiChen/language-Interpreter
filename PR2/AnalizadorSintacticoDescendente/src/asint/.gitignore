@@ -1,0 +1,7 @@
+/AnalizadorSintacticoTiny.java
+/AnalizadorSintacticoTinyConstants.java
+/AnalizadorSintacticoTinyTokenManager.java
+/ParseException.java
+/SimpleCharStream.java
+/Token.java
+/TokenMgrError.java

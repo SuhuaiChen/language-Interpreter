@@ -1,0 +1,158 @@
+package asint;
+
+import java_cup.runtime.*;
+import alex.AnalizadorLexicoTiny;
+import alex.UnidadLexica;
+import errors.GestionErroresTiny;
+
+
+scan with {: 
+  return getScanner().next_token(); 
+:};
+
+parser code {: 
+   private GestionErroresTiny errores;
+   public void syntax_error(Symbol unidadLexica) {
+     errores.errorSintactico((UnidadLexica)unidadLexica);
+   }
+:};
+init with {: 
+   errores = new GestionErroresTiny();
+   AnalizadorLexicoTiny alex = (AnalizadorLexicoTiny)getScanner();
+   alex.fijaGestionErrores(errores);
+:};
+
+
+
+
+
+terminal      IDEN, PAP, PCIERRE, ASIG, COMA, MAS, MENOS, POR, DIV, EVAL, GT,
+              GE, LT, LE, EQ, NE, PYC, LLAP, LLCIERRE, SEP, LITERALENTERO, 
+              LITERALREAL,TRUE, FALSE, AND, OR, NOT, BOOL,ENT, REAL,MOD, CAP, CCIERRE, PUNTO, 
+              CIRCUNFLEJO, AMP, LITERALCADENA, STRING, NULL, PROC, IF, ELSE, WHILE, STRUCT, NEW, 
+              DELETE, READ, WRITE, NL, TYPE, CALL;
+
+non terminal	programa, bloque, declaraciones_opt, instrucciones_opt, tipo1, tipo2, tipo3, tipoBasico, 
+				typeDeclaracion, declaraciones, declaracion, header, variable, parametrosFormales_opt, 
+				parametrosFormales,	parametroFormal, referencia_opt, instrucciones, instruccion,IFR,  
+				parametrosReales_opt, parametrosReales,RparametrosReales, E0, FE1, E1, RE1, OP1, E2, 
+				RE2, FE3, E3, FE4, E4, RE4, OP4, E5,OP5, E6,RE6, OP6,E7;
+
+
+programa  ::= bloque ;
+bloque ::= LLAP declaraciones_opt instrucciones_opt LLCIERRE;
+declaraciones_opt  ::= declaraciones SEP;
+declaraciones_opt  ::= ;
+instrucciones_opt   ::=  instrucciones ;
+instrucciones_opt   ::=  ;
+
+
+
+tipo1 ::= tipo1 CAP LITERALENTERO CCIERRE ;
+tipo1 ::= tipo2 ;
+
+tipo2 ::=  CIRCUNFLEJO tipo2;
+tipo2 ::= tipo3 ;
+
+
+tipo3 ::= tipoBasico ;
+tipo3 ::= STRUCT LLAP typeDeclaracion LLCIERRE ;
+tipo3 ::= IDEN ;
+
+tipoBasico ::= ENT ;
+tipoBasico ::= REAL ;
+tipoBasico ::= BOOL ;
+tipoBasico ::= STRING ;
+
+typeDeclaracion ::= variable COMA typeDeclaracion ;
+typeDeclaracion ::=  variable ;
+
+declaraciones  ::= declaraciones PYC declaracion;
+declaraciones  ::= declaracion;
+declaracion  ::= variable
+                             | TYPE variable
+                             | header bloque ;
+
+
+header ::= PROC IDEN PAP parametrosFormales_opt PCIERRE;
+variable  ::= tipo1 IDEN;
+parametrosFormales_opt  ::= parametrosFormales ;
+parametrosFormales_opt  ::= ;
+parametrosFormales  ::= parametrosFormales COMA  parametroFormal ;
+parametrosFormales ::= parametroFormal;
+parametroFormal  ::= tipo1 referencia_opt IDEN ;
+referencia_opt  ::= AMP ;
+referencia_opt  ::= ;
+
+instrucciones ::= instrucciones PYC instruccion;
+instrucciones ::= instruccion;
+instruccion   ::=  EVAL  E0
+                              | IF E0 bloque IFR
+                              | WHILE E0 bloque
+                              | READ E0 
+							  | WRITE E0
+                              | NL 
+                              | NEW E0
+                              | DELETE E0
+                              | CALL IDEN PAP parametrosReales_opt PCIERRE
+                              | bloque;
+
+IFR ::= ELSE bloque ;
+IFR ::= ;
+
+parametrosReales_opt  ::= parametrosReales ;
+parametrosReales_opt  ::= ;
+parametrosReales  ::= parametrosReales COMA E0 ;
+parametrosReales  ::= E0 ;
+
+
+E0 ::= E1 FE1 ;
+FE1 ::= ASIG  E0 ;
+FE1 ::= ;
+E1 ::= E2 RE1 ;
+RE1 ::= OP1 E2 RE1 ;
+RE1 ::= ;
+OP1 ::= LT ;
+OP1 ::= GT ;
+OP1 ::= LE ;
+OP1 ::= GE ;
+OP1 ::= EQ ;
+OP1 ::= NE ;
+E2 ::= E3 FE3 RE2 ;
+RE2 ::= MAS E3 RE2 ;
+RE2 ::= ;
+FE3 ::= MENOS E3 ;
+FE3 ::= ;
+E3 ::= E4 FE4 ;
+FE4 ::= AND E3 ;
+FE4 ::= OR E4 ;
+FE4 ::= ;
+E4 ::= E5 RE4 ;
+RE4 ::= OP4 E5 RE4 ;
+RE4 ::= ;
+OP4 ::= POR ;
+OP4 ::= DIV ;
+OP4 ::= MOD ;
+E5 ::= OP5 E5 ;
+E5 ::= E6 ;
+OP5 ::= NOT ;
+OP5 ::= MENOS ;
+E6 ::= E7 RE6 ;
+RE6 ::= OP6 RE6 ;
+RE6 ::= ;
+OP6 ::= CAP E0 CCIERRE;
+OP6 ::= PUNTO IDEN ;
+OP6 ::= CIRCUNFLEJO;
+E7 ::= IDEN ;
+E7 ::= LITERALENTERO ;
+E7 ::= LITERALREAL ;
+E7 ::= TRUE ;
+E7 ::= FALSE ;
+E7 ::= LITERALCADENA;
+E7 ::= PAP E0 PCIERRE;
+E7 ::= NULL;
+
+
+
+
+

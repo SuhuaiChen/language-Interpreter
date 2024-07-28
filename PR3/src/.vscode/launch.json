@@ -1,0 +1,30 @@
+{
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Main",
+            "request": "launch",
+            "mainClass": "c_ast_ascendente.Main",
+            "projectName": "src_9ba3519f"
+        },
+        {
+            "type": "java",
+            "name": "Main",
+            "request": "launch",
+            "mainClass": "Main",
+            "projectName": "src_9ba3519f"
+        },
+        {
+            "type": "java",
+            "name": "DomJudge",
+            "request": "launch",
+            "mainClass": "DomJudge",
+            "projectName": "src_9ba3519f",
+            "args": [
+                "input.txt",
+                "asc",
+                "rec"
+            ]
+        }
+    ]
+}

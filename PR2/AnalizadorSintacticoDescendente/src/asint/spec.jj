@@ -1,0 +1,142 @@
+options  {
+  STATIC=false;
+  DEBUG_PARSER=true;
+  IGNORE_CASE = true;
+}  
+PARSER_BEGIN(AnalizadorSintacticoTiny)
+package asint;
+
+public class AnalizadorSintacticoTiny {
+    protected void newToken(Token t) {}
+}
+PARSER_END(AnalizadorSintacticoTiny)
+
+  TOKEN:{<#letra:["a"-"z","A"-"Z","_"]>}
+  TOKEN:{<#digitoPositivo:["1"-"9"]>}
+  TOKEN:{<#digito:<digitoPositivo>|"0">} 
+  TOKEN:{<#parteEntera:<digitoPositivo> (<digito>)* |"0">} 
+  TOKEN:{<#parteDecimal: (<digito>)* <digitoPositivo> | "0">}
+  TOKEN:{<#parteExponencial: ("E"|"e")(["+","-"])?(<parteEntera>)>}
+  
+  SKIP:{<["\t"," ","\r","\b","\n"]>}  
+  SKIP:{<"#"(~["\n"])*>} 
+  
+  TOKEN: {<TRUE:"true">}
+  TOKEN: {<FALSE:"false">}
+  TOKEN: {<and:"and">}
+  TOKEN: {<or:"or">}
+  TOKEN: {<not:"not">}
+  TOKEN: {<bool:"bool">}
+  TOKEN: {<real:"real">}
+  TOKEN: {<INT:"int">}
+  TOKEN: {<string:"string">}
+  TOKEN: {<NULL:"null">}
+  TOKEN: {<proc:"proc">}
+  TOKEN: {<IF:"if">}
+  TOKEN: {<ELSE:"else">}
+  TOKEN: {<WHILE:"while">}
+  TOKEN: {<struct:"struct">}
+  TOKEN: {<NEW:"new">}
+  TOKEN: {<delete:"delete">}
+  TOKEN: {<read:"read">}
+  TOKEN: {<write:"write">}
+  TOKEN: {<nl:"nl">}
+  TOKEN: {<type:"type">}
+  TOKEN: {<call:"call">}
+  
+  
+  
+  TOKEN:{<identificador:<letra>(<letra>|<digito>)*>}
+  TOKEN:{<literalEntero:(["+","-"])?<parteEntera>>}  TOKEN:{<literalReal:<literalEntero>(<parteExponencial>|("."<parteDecimal>)|("."<parteDecimal><parteExponencial>))>}
+  TOKEN:{<literalCadena:"\"" (~["\""])* "\"">}
+  TOKEN:{<suma:"+">}
+  TOKEN:{<resta:"-">}
+  TOKEN:{<mul:"*">}
+  TOKEN:{<div:"/">}
+  TOKEN:{<mayor:">">}
+  TOKEN:{<mayorIgual:">=">}
+  TOKEN:{<menor:"<">}
+  TOKEN:{<menorIgual:"<=">}
+  TOKEN:{<igual:"==">}
+  TOKEN:{<distinto:"!=">}
+  TOKEN:{<asignar:"=">}
+  TOKEN:{<puntoycoma:";">}
+  TOKEN:{<parentesisApertura:"(">}
+  TOKEN:{<parentesisCierre:")">}
+  TOKEN:{<llaveApertura:"{">}
+  TOKEN:{<llaveCierre:"}">}
+  TOKEN:{<eval:"@">}
+  TOKEN:{<modulo:"%">}
+  TOKEN:{<corcheteApertura:"[">}
+  TOKEN:{<corcheteCierre:"]">}
+  TOKEN:{<punto:".">}
+  TOKEN:{<coma:",">}
+  TOKEN:{<circunflejo:"^">}
+  TOKEN:{<ampersand:"&">}
+  TOKEN:{<separador:"&&">}
+
+  void programa()  : {} {bloque() <EOF>}
+  void bloque()  : {} { <llaveApertura> declaraciones_opt() instrucciones_opt() <llaveCierre>}
+  void declaraciones_opt()  : {} { declaraciones() <separador>|{}}
+  void instrucciones_opt()  : {} { instrucciones() | {}}
+  
+  void tipo1()  : {} { tipo2() rtipo1() }
+  void rtipo1()  : {} { <corcheteApertura> <literalEntero> <corcheteCierre> rtipo1() |{} }
+  void tipo2()  : {} {<circunflejo> tipo2() | tipo3()}
+  
+  void tipo3()  : {} { tipoBasico() | <struct> <llaveApertura> typeDeclaracion() <llaveCierre> | <identificador>}
+  void tipoBasico()  : {} { <INT> | <real> | <bool> | <string>}
+  void typeDeclaracion()  : {} { variable() FtypeDeclaracion() }
+  void FtypeDeclaracion()  : {} {<coma> typeDeclaracion() | {}}
+  void declaraciones()  : {} {declaracion() DR()}
+  void DR()  : {} {<puntoycoma> declaracion() DR() | {}}
+  void declaracion()  : {} {variable()
+                                             | <type> variable()
+                                             | header() bloque()
+
+}
+void header() : {} { <proc> <identificador> <parentesisApertura> parametrosFormales_opt() <parentesisCierre>}
+  void variable()  : {} {tipo1() <identificador>}
+  void parametrosFormales_opt()  : {} {parametrosFormales() | {} }
+  void parametrosFormales()  : {} {parametroFormal() RparametrosFormales() }
+  void RparametrosFormales()  : {} {<coma> parametroFormal() RparametrosFormales()|{}}
+  void parametroFormal ()  : {} {tipo1() referencia_opt() <identificador>}
+  void referencia_opt ()  : {} {<ampersand> | {}}
+  void instrucciones ()  : {} {instruccion() IR()}
+  void IR()  : {} {<puntoycoma> instruccion() IR() | {}}
+  void instruccion ()  : {} { <eval> E0()
+                                             | <IF> E0() bloque() IFR()
+                                             | <WHILE> E0() bloque()
+                                             | <read> E0() 
+											 | <write> E0()
+                                             | <nl>
+                                             | <NEW> E0()
+                                             | <delete> E0()
+                                             | <call> <identificador> <parentesisApertura> parametrosReales_opt() <parentesisCierre>
+                                             | bloque()
+}
+  void IFR ()  : {} { <ELSE> bloque() | {}}
+ void parametrosReales_opt()  : {} {parametrosReales() | {} }
+  void parametrosReales()  : {} {E0() RparametrosReales() }
+  void RparametrosReales()  : {} {<coma> E0() RparametrosReales()|{}}
+ 
+  void E0 ()  : {} {E1() FE1()}
+  void FE1()  : {} {<asignar> E0() | {}}
+  void E1()  : {} {E2() RE1()}
+  void RE1()  : {} {OP1() E2() RE1() | {}}
+  void OP1()  : {} {<mayor> |<menor>|<menorIgual>|<mayorIgual>|<igual>|<distinto>}
+  void E2()  : {} {E3() FE3() RE2()}
+  void RE2()  : {} {<suma> E3() RE2() | {}}
+  void FE3()  : {} {<resta> E3() | {}}
+  void E3()  : {} {E4() FE4()}
+  void FE4()  : {} {<and> E3() | <or> E4() | {}} 
+  void E4()  : {} {E5() RE4()}
+  void RE4()  : {} {OP4() E5() RE4() | {}}
+  void OP4()  : {} {<mul> | <div> | <modulo>}
+  void E5()  : {} {OP5() E5() | E6()}
+  void OP5()  : {} {<not> | <resta>}
+  void E6()  : {} {E7() RE6()}
+  void RE6()  : {} {OP6() RE6() | {}}
+  void OP6()  : {} {<corcheteApertura> E0() <corcheteCierre> | <punto> <identificador> | <circunflejo>}
+  void E7()  : {} {<identificador> | <literalEntero> | <literalReal> | <TRUE> | <FALSE> | <literalCadena> | <parentesisApertura> E0() <parentesisCierre> | <NULL>} 
+

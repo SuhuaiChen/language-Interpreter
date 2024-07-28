@@ -1,0 +1,282 @@
+package c_ast_ascendente;
+
+import java_cup.runtime.*;
+import asint.ClaseSemanticaTiny;
+import asint.SintaxisAbstractaTiny.Prog;
+import asint.SintaxisAbstractaTiny.Bloq;
+import asint.SintaxisAbstractaTiny.DecsOp;
+import asint.SintaxisAbstractaTiny.Decs;
+import asint.SintaxisAbstractaTiny.Dec;
+import asint.SintaxisAbstractaTiny.InstrsOp;
+import asint.SintaxisAbstractaTiny.Instrs;
+import asint.SintaxisAbstractaTiny.Instr;
+import asint.SintaxisAbstractaTiny.Tipo;
+import asint.SintaxisAbstractaTiny.Exp;
+import asint.SintaxisAbstractaTiny.Campos;
+import asint.SintaxisAbstractaTiny.Campo;
+import asint.SintaxisAbstractaTiny.ParsFOp;
+import asint.SintaxisAbstractaTiny.ParsF;
+import asint.SintaxisAbstractaTiny.ParF;
+import asint.SintaxisAbstractaTiny.ParsReOp;
+import asint.SintaxisAbstractaTiny.ParsRe;
+
+
+
+import c_ast_ascendente.UnidadLexica.StringLocalizado;
+
+
+scan with {: 
+  return getScanner().next_token(); 
+:};
+parser code {: 
+   private GestionErroresTiny errores;
+   public void syntax_error(Symbol unidadLexica) {
+     errores.errorSintactico((UnidadLexica)unidadLexica);
+   }
+:};
+init with {: 
+   errores = new GestionErroresTiny();
+   AnalizadorLexicoTiny alex = (AnalizadorLexicoTiny)getScanner();
+   alex.fijaGestionErrores(errores);
+:};
+action code {:
+  ClaseSemanticaTiny sem = new ClaseSemanticaTiny();
+:}
+
+
+terminal    PAP, PCIERRE, COMA, EVAL, PYC, LLAP, LLCIERRE, 
+            SEP, BOOL,ENT, REAL, CCIERRE, PUNTO, 
+            AMP, STRING, PROC, IF, ELSE, WHILE, STRUCT, NEW, DELETE, READ, WRITE, NL, TYPE, CALL;
+
+terminal StringLocalizado  IDEN, ASIG, MAS, MENOS, POR, DIV, GT, GE, LT,
+                           LE, EQ, NE, MOD, AND, OR, NOT, CIRCUNFLEJO, 
+                           LITERALENTERO, LITERALREAL, LITERALCADENA, TRUE, FALSE, NULL, CAP;
+
+non terminal		Prog programa;
+non terminal		Bloq bloque;
+non terminal		DecsOp declaraciones_opt;
+non terminal		Decs declaraciones;
+non terminal		Dec declaracion;
+non terminal		InstrsOp instrucciones_opt;
+non terminal		Instrs instrucciones;
+non terminal		Instr instruccion;
+non terminal		Tipo tipo1, tipo2, tipo3, tipoBasico;
+non terminal		Exp E0, E1, E2, E3, E4, E5, E6, E7;
+non terminal		Campos campos;
+non terminal		Campo campo;
+non terminal		ParsFOp parametrosFormales_opt;
+non terminal		ParsF parametrosFormales;
+non terminal		ParF parametroFormal;
+non terminal		ParsReOp parametrosReales_opt;
+non terminal		ParsRe parametrosReales;
+non terminal		StringLocalizado OP1, OP4, OP5;
+
+
+programa  ::= bloque: Bloq
+	{: RESULT = sem.prog(Bloq);  :};
+bloque ::= LLAP declaraciones_opt: DecsOp instrucciones_opt: InstrOp LLCIERRE
+	{: RESULT = sem.bloq(DecsOp,InstrOp); :};
+declaraciones_opt  ::= declaraciones: Decs  SEP
+	{: RESULT = sem.si_decs(Decs); :};
+declaraciones_opt  ::= 
+	{: RESULT = sem.no_decs(); :};
+instrucciones_opt   ::=  instrucciones  : Instrs
+	{: RESULT = sem.si_instrs(Instrs); :};
+instrucciones_opt   ::=  
+	{: RESULT = sem.no_instrs(); :};
+
+tipo1 ::= tipo1:Tipo CAP LITERALENTERO:num CCIERRE 
+   {: RESULT = (Tipo)sem.tipo_lista(Tipo, num.str()).ponFila(num.fila()).ponCol(num.col()); :};
+tipo1 ::= tipo2: Tipo 
+	{: RESULT = Tipo; :};
+tipo2 ::=  CIRCUNFLEJO tipo2 : Tipo
+   {: RESULT = sem.tipo_circum(Tipo); :};
+tipo2 ::= tipo3 : Tipo 
+	{: RESULT = Tipo; :};
+tipo3 ::= tipoBasico: Tipo  
+	{: RESULT = Tipo; :};
+tipo3 ::= STRUCT LLAP campos: Campos LLCIERRE 
+	{: RESULT = sem.tipo_struct(Campos); :};
+tipo3 ::= IDEN: id 
+	{: RESULT = (Tipo)sem.tipo_iden(id.str()).ponFila(id.fila()).ponCol(id.col()); :};
+
+tipoBasico ::= ENT
+	{: RESULT = sem.tipo_int(); :};
+tipoBasico ::= REAL
+	{: RESULT = sem.tipo_real(); :};
+tipoBasico ::= BOOL 
+	{: RESULT = sem.tipo_bool(); :};
+tipoBasico ::= STRING 
+	{: RESULT = sem.tipo_string(); :};
+
+campos ::= campos: Campos COMA campo: Campo
+	{: RESULT = sem.muchos_campos(Campos, Campo); :};
+
+campos ::= campo: Campo
+	{: RESULT = sem.un_campo(Campo); :};
+
+campo ::= tipo1: Tipo IDEN: id
+	{: RESULT = (Campo)sem.crea_campo(Tipo, id.str()).ponFila(id.fila()).ponCol(id.col()); :};
+
+declaraciones  ::= declaraciones: Decs PYC declaracion: Dec
+	{: RESULT = sem.muchas_decs(Decs,Dec); :};
+declaraciones  ::= declaracion: Dec
+	{: RESULT = sem.una_dec(Dec); :};
+declaracion  ::= tipo1: Tipo IDEN: id
+	{: RESULT = (Dec)sem.dec_variable(Tipo,  id.str()).ponFila(id.fila()).ponCol(id.col()); :};
+declaracion  ::=TYPE tipo1: Tipo IDEN: id
+	{: RESULT = (Dec)sem.dec_tipo(Tipo, id.str()).ponFila(id.fila()).ponCol(id.col()); :};
+declaracion  ::=PROC  IDEN: id PAP  parametrosFormales_opt: ParsFOp PCIERRE bloque: Bloq
+	{: RESULT = (Dec)sem.dec_proc(id.str(), ParsFOp, Bloq).ponFila(id.fila()).ponCol(id.col()); :};
+
+
+parametrosFormales_opt  ::= parametrosFormales: ParsF 
+	{: RESULT = sem.si_parsF(ParsF ); :};
+parametrosFormales_opt  ::=  
+	{: RESULT = sem.no_parsF(); :};
+parametrosFormales ::= parametrosFormales: ParsF COMA parametroFormal: ParF 
+	{: RESULT = sem.muchos_parsF(ParsF, ParF); :};
+parametrosFormales ::= parametroFormal: ParF
+	{: RESULT = sem.un_parF(ParF); :};
+
+parametroFormal  ::= tipo1: Tipo AMP IDEN: id
+	{: RESULT = (ParF)sem.paramF(id.str(),Tipo).ponFila(id.fila()).ponCol(id.col()); :};
+parametroFormal  ::= tipo1: Tipo IDEN: id
+	{: RESULT = (ParF)sem.param(id.str(),Tipo).ponFila(id.fila()).ponCol(id.col()); :};
+
+
+instrucciones ::= instrucciones: Instrs PYC instruccion: Instr
+	{: RESULT = sem.muchas_instrs(Instrs, Instr); :};
+instrucciones ::= instruccion: Instr
+	{: RESULT = sem.una_instr(Instr); :};
+instruccion   ::= EVAL  E0: Exp
+	{: RESULT = sem.instr_eval(Exp); :};
+instruccion   ::= IF E0: Exp bloque: Bloq
+	{: RESULT = sem.instr_if(Exp,Bloq) ; :};
+instruccion   ::= IF E0: Exp bloque: Bloq1 ELSE bloque: Bloq2
+	{: RESULT = sem.instr_ifelse(Exp,Bloq1,Bloq2) ; :};
+instruccion   ::= WHILE E0: Exp bloque: Bloq
+	{: RESULT = sem.instr_while(Exp ,Bloq) ; :};
+instruccion   ::= READ E0: Exp
+	{: RESULT = sem.instr_read(Exp) ; :};
+instruccion   ::= WRITE E0: Exp
+	{: RESULT = sem.instr_write(Exp) ; :};
+instruccion   ::= NL 
+	{: RESULT = sem.instr_nl(); :};
+instruccion   ::= NEW E0: Exp	
+	{: RESULT = sem.instr_new(Exp) ; :};
+instruccion   ::= DELETE E0: Exp
+	{: RESULT = sem.instr_del(Exp); :};
+instruccion   ::= CALL IDEN: id PAP parametrosReales_opt: ParsReOp PCIERRE
+	{: RESULT = (Instr)sem.instr_call(id.str(), ParsReOp ).ponFila(id.fila()).ponCol(id.col()); :};
+instruccion   ::= bloque: Bloq
+	{: RESULT = sem.instr_bloque(Bloq); :};
+
+parametrosReales_opt  ::= parametrosReales: ParsRe
+	{: RESULT = sem.si_parsRe(ParsRe ); :};
+parametrosReales_opt  ::= 
+	{: RESULT = sem.no_parsRe(); :};
+parametrosReales  ::= parametrosReales: ParsRe COMA E0: Exp 
+	{: RESULT = sem.muchos_parsRe(ParsRe, Exp); :};
+parametrosReales  ::= E0: Exp 
+	{: RESULT = sem.un_parRe(Exp); :};
+
+
+E0 ::= E1: opnd1 ASIG:op E0: opnd2
+	{: RESULT = (Exp)sem.asig(opnd1, opnd2).ponFila(op.fila()).ponCol(op.col()); :};
+
+E0 ::= E1: Exp
+	{: RESULT = Exp; :};
+
+
+E1 ::=  E1: opnd1 OP1: op E2: opnd2
+	{: RESULT = (Exp)sem.mkop(op.str(), opnd1 , opnd2).ponFila(op.fila()).ponCol(op.col()); :};
+
+E1 ::= E2: Exp
+	{: RESULT = Exp; :};
+
+OP1 ::= LT: op
+	{: RESULT = op; :};
+
+OP1 ::= GT: op
+	{: RESULT = op; :};
+
+OP1 ::= LE: op
+	{: RESULT = op; :};
+
+OP1 ::= GE: op
+	{: RESULT = op; :};
+
+OP1 ::= EQ: op
+	{: RESULT = op; :};
+
+OP1 ::= NE: op
+	{: RESULT = op; :};
+
+E2 ::= E2: opnd1 MAS: op E3: opnd2
+	{: RESULT = (Exp)sem.mkop(op.str(), opnd1 , opnd2).ponFila(op.fila()).ponCol(op.col()); :};
+E2 ::= E3: opnd1 MENOS: op E3: opnd2
+	{: RESULT = (Exp)sem.mkop(op.str(), opnd1 , opnd2).ponFila(op.fila()).ponCol(op.col()); :};
+E2 ::=   E3: Exp
+	{: RESULT = Exp; :};
+
+E3 ::= E4: opnd1 AND: op  E3: opnd2
+	{: RESULT = (Exp)sem.mkop(op.str(), opnd1 , opnd2).ponFila(op.fila()).ponCol(op.col()); :};
+E3 ::= E4: opnd1  OR: op  E4: opnd2
+	{: RESULT = (Exp)sem.mkop(op.str(), opnd1 , opnd2).ponFila(op.fila()).ponCol(op.col()); :};
+E3 ::= E4: Exp
+	{: RESULT = Exp; :};
+
+E4 ::= E4: opnd1 OP4: op E5: opnd2
+	{: RESULT = (Exp)sem.mkop(op.str(), opnd1 , opnd2).ponFila(op.fila()).ponCol(op.col()); :};
+E4 ::= E5: Exp
+	{: RESULT = Exp; :};
+OP4 ::= POR: op
+	{: RESULT = op; :};
+OP4 ::= DIV: op
+	{: RESULT = op; :};
+OP4 ::= MOD: op
+	{: RESULT = op; :};
+
+E5 ::= OP5: op E5: opnd
+	{: RESULT = (Exp)sem.mkopUn(op.str(), opnd).ponFila(op.fila()).ponCol(op.col()); :};
+E5 ::= E6: Exp
+	{: RESULT = Exp; :};
+OP5 ::= NOT: op
+	{: RESULT = op; :};
+OP5 ::= MENOS: op
+	{: RESULT = op; :};
+
+E6 ::= E6: opnd1 CAP:op E0: opnd2 CCIERRE
+	{: RESULT = (Exp)sem.indexacion (opnd1 , opnd2).ponFila(op.fila()).ponCol(op.col()); :};
+
+E6 ::= E6: opnd1 PUNTO IDEN: id
+	{: RESULT = (Exp)sem.acceso(opnd1 , id.str()).ponFila(id.fila()).ponCol(id.col()); :};
+E6 ::= E6: opnd CIRCUNFLEJO: op
+	{: RESULT = (Exp)sem.indireccion(opnd).ponFila(op.fila()).ponCol(op.col()); :};
+E6 ::= E7: Exp
+	{: RESULT = Exp; :};
+
+E7 ::= IDEN: id
+	{: RESULT = (Exp)sem.iden(id.str()).ponFila(id.fila()).ponCol(id.col()); :};
+
+E7 ::= LITERALENTERO: num
+	{: RESULT = (Exp)sem.lit_ent (num.str()).ponFila(num.fila()).ponCol(num.col()); :};
+
+E7 ::= LITERALREAL: num
+	{: RESULT = (Exp)sem.lit_real(num.str()).ponFila(num.fila()).ponCol(num.col()); :};
+
+E7 ::= TRUE: id
+	{: RESULT = (Exp) sem.lit_true().ponFila(id.fila()).ponCol(id.col()); :};
+
+E7 ::= FALSE: id
+	{: RESULT = (Exp) sem.lit_false().ponFila(id.fila()).ponCol(id.col()); :};
+
+E7 ::= LITERALCADENA: id
+	{: RESULT = (Exp)sem.lit_cadena(id.str()).ponFila(id.fila()).ponCol(id.col()); :};
+
+E7 ::= PAP E0: exp PCIERRE
+	{: RESULT = exp; :};
+
+E7 ::= NULL: id
+	{: RESULT = (Exp)sem.lit_null().ponFila(id.fila()).ponCol(id.col()); :};

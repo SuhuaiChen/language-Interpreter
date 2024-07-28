@@ -1,0 +1,7 @@
+{
+    "java.project.referencedLibraries": [
+        "lib/**/*.jar",
+        "/Users/mattchen/Desktop/procesadores de lenguajes/PL/PR3/G20/cup.jar",
+        "/Users/mattchen/Desktop/procesadores de lenguajes/cup.jar"
+    ]
+}

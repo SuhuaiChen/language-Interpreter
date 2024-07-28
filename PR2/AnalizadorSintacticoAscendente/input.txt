@@ -1,0 +1,60 @@
+## Entrada sintacticamente valida para
+## los analizadores de Tiny 
+{
+type
+ ^^^^^^struct{
+ int caballos,
+ bool peso,
+ real x,
+ ^^struct {
+ int[20][20][30] caballos,
+int peso
+ } motor
+ }[20] tCoche;
+type ^^ tCoche[5][10] tRarito;
+^^^tRarito[10][10] caballos;
+proc subprog(int caballos, ^^tRarito peso, struct{int caballos,
+^tRarito peso} x) {
+ ^^tRarito motor;
+ proc bmw(int v, int[98] x) {}
+ &&
+ @ motor.x.x.x.x^^.x.x.c^.caballos[e+e[caballos.c]].peso^[r] % 2;
+ call bmw(5, 5
+- 5)
+}
+&&
+if(caballos == 34) {
+ if(caballos < 56) {
+ @ caballos = caballos + 1;
+while (caballos < 20) {
+ int caballos
+ &&
+ @ caballos = 2*caballos;
+ @ caballos = 5 }
+
+}
+ else {
+ proc peso() {}
+&&
+ @ caballos = 2 * peso;
+call peso(2*caballos + 80, 45
+- caballos)
+
+}
+};{
+int caballos
+&&
+ @ caballos;
+ read caballos.caballos;
+ write caballos + 67;
+ delete caballos.caballos[caballos];
+ new bmw.v[caballos];
+ nl
+};
+@ "Un motor pequeño
+y
+potente" + null;
+if 5 {@ x=33};
+if 5 {} else {};
+while 5 {} 
+}
